@@ -16,6 +16,8 @@ from mmdet.structures.mask import encode_mask_results
 from ..functional import eval_recalls
 from .coco_metric import CocoMetric
 
+import pickle as pkl
+
 try:
     import lvis
     if getattr(lvis, '__version__', '0') >= '10.5.3':
@@ -232,6 +234,14 @@ class LVISMetric(CocoMetric):
 
         # split gt and prediction list
         gts, preds = zip(*results)
+        
+        # Dump gts and preds
+        gts_pth = "./eval/gts.pkl"
+        preds_pth = "./eval/preds.pkl"
+        with open(gts_pth, 'wb') as f:
+            pkl.dump(gts, f)
+        with open(preds_pth, 'wb') as f:
+            pkl.dump(preds, f)
 
         tmp_dir = None
         if self.outfile_prefix is None:
@@ -242,6 +252,7 @@ class LVISMetric(CocoMetric):
 
         if self._lvis_api is None:
             # use converted gt json file to initialize coco api
+            print("LVIS api is None !!!!!!!! Use coco json to init...")
             logger.info('Converting ground truth to coco format...')
             coco_json_path = self.gt_to_coco_json(
                 gt_dicts=gts, outfile_prefix=outfile_prefix)

@@ -370,7 +370,9 @@ test_dataloader = dict(
 val_evaluator = dict(
     type='LVISMetric',
     ann_file='data/lvis/annotations/lvis_v1_val.json',
-    metric=['bbox', 'segm'])
+    metric=['bbox'])
+
+    # metric=['bbox', 'segm'])
 test_evaluator = val_evaluator
 
 # training schedule for 90k with batch_size of 64

@@ -8,6 +8,8 @@ from mmengine.fileio import get_local_path
 from mmdet.registry import DATASETS
 from .coco import CocoDataset
 
+import os
+import pickle as pkl
 
 @DATASETS.register_module()
 class LVISV05Dataset(CocoDataset):
@@ -583,6 +585,25 @@ class LVISV1Dataset(LVISDataset):
         None
     }
 
+    # Define by Guorun to filter the frames that cannot find images
+    def filter_data(self) -> List[dict]:
+        valid_data_infos = []
+        for i, data_info in enumerate(self.data_list):
+            # if i > 1000:
+            #     continue
+            img_pth = data_info['img_path']
+            if os.path.exists(img_pth):
+                valid_data_infos.append(data_info)
+                # if len(valid_data_infos) >= 1000:
+                #     break
+            else:
+                print("Img pth {} does not exist!!!".format(img_pth))
+        print("Filter data from {} -> {}".format(
+            len(self.data_list), len(valid_data_infos)
+        ))
+        return valid_data_infos
+
+
     def load_data_list(self) -> List[dict]:
         """Load annotations from an annotation file named as ``self.ann_file``
 
@@ -628,11 +649,18 @@ class LVISV1Dataset(LVISDataset):
                 raw_img_info
             })
             data_list.append(parsed_data_info)
+            # Dump frame data
+            # print("Parsed data info: ", parsed_data_info)
+            # dump_pth = "./parse_data_info.pkl"
+            # with open(dump_pth, 'wb') as f:
+            #     pkl.dump(parsed_data_info, f)
+
+
         if self.ANN_ID_UNIQUE:
             assert len(set(total_ann_ids)) == len(
                 total_ann_ids
             ), f"Annotation ids in '{self.ann_file}' are not unique!"
 
         del self.lvis
-
+        # print("Len of data list: ", len(data_list))
         return data_list
