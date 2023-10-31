@@ -594,7 +594,8 @@ class LVISV1Dataset(LVISDataset):
             img_pth = data_info['img_path']
             if os.path.exists(img_pth):
                 valid_data_infos.append(data_info)
-                # if len(valid_data_infos) >= 1000:
+                # Add to debug
+                # if len(valid_data_infos) >= 100:
                 #     break
             else:
                 print("Img pth {} does not exist!!!".format(img_pth))
@@ -625,6 +626,7 @@ class LVISV1Dataset(LVISDataset):
                 self.ann_file, backend_args=self.backend_args) as local_path:
             self.lvis = LVIS(local_path)
         self.cat_ids = self.lvis.get_cat_ids()
+        print("Cat id: ", self.cat_ids)
         self.cat2label = {cat_id: i for i, cat_id in enumerate(self.cat_ids)}
         self.cat_img_map = copy.deepcopy(self.lvis.cat_img_map)
 
@@ -637,8 +639,9 @@ class LVISV1Dataset(LVISDataset):
             # coco_url is used in LVISv1 instead of file_name
             # e.g. http://images.cocodataset.org/train2017/000000391895.jpg
             # train/val split in specified in url
-            raw_img_info['file_name'] = raw_img_info['coco_url'].replace(
-                'http://images.cocodataset.org/', '')
+            if 'coco_url' in raw_img_info:
+                raw_img_info['file_name'] = raw_img_info['coco_url'].replace(
+                    'http://images.cocodataset.org/', '')
             ann_ids = self.lvis.get_ann_ids(img_ids=[img_id])
             raw_ann_info = self.lvis.load_anns(ann_ids)
             total_ann_ids.extend(ann_ids)
@@ -648,6 +651,7 @@ class LVISV1Dataset(LVISDataset):
                 'raw_img_info':
                 raw_img_info
             })
+            # print("Parsed data info: ", parsed_data_info)
             data_list.append(parsed_data_info)
             # Dump frame data
             # print("Parsed data info: ", parsed_data_info)
@@ -664,3 +668,5 @@ class LVISV1Dataset(LVISDataset):
         del self.lvis
         # print("Len of data list: ", len(data_list))
         return data_list
+
+

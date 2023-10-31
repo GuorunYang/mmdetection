@@ -16,6 +16,7 @@ from mmdet.structures.mask import encode_mask_results
 from ..functional import eval_recalls
 from .coco_metric import CocoMetric
 
+import os
 import pickle as pkl
 
 try:
@@ -110,7 +111,7 @@ class LVISMetric(CocoMetric):
         if iou_thrs is None:
             iou_thrs = np.linspace(
                 .5, 0.95, int(np.round((0.95 - .5) / .05)) + 1, endpoint=True)
-        self.iou_thrs = iou_thrs
+        self.iou_thrs = np.array(iou_thrs, dtype=np.float32)
         self.metric_items = metric_items
         self.format_only = format_only
         if self.format_only:
@@ -139,6 +140,8 @@ class LVISMetric(CocoMetric):
         # handle dataset lazy init
         self.cat_ids = None
         self.img_ids = None
+        self.valid_cat_ids = set()
+
 
     def fast_eval_recall(self,
                          results: List[dict],
@@ -236,8 +239,9 @@ class LVISMetric(CocoMetric):
         gts, preds = zip(*results)
         
         # Dump gts and preds
-        gts_pth = "./eval/gts.pkl"
-        preds_pth = "./eval/preds.pkl"
+        dump_dir = "./eval"
+        gts_pth = os.path.join(dump_dir, "gts.pkl")
+        preds_pth = os.path.join(dump_dir, "preds.pkl")
         with open(gts_pth, 'wb') as f:
             pkl.dump(gts, f)
         with open(preds_pth, 'wb') as f:
@@ -259,12 +263,20 @@ class LVISMetric(CocoMetric):
             self._lvis_api = LVIS(coco_json_path)
 
         # handle lazy init
-        if self.cat_ids is None:
+        if self.cat_ids is None:            
             self.cat_ids = self._lvis_api.get_cat_ids()
+            # self.valid_cat_ids = set()
+            for anno_info in self._lvis_api.dataset["annotations"]:
+                self.valid_cat_ids.add(anno_info["category_id"])
+                # print("Valid category IDs: ", valid_cat_ids)
+
+            
+
         if self.img_ids is None:
             self.img_ids = self._lvis_api.get_img_ids()
 
         # convert predictions to coco format and dump to json file
+        print("Outfile prefix: ", outfile_prefix)
         result_files = self.results2json(preds, outfile_prefix)
 
         eval_results = OrderedDict()
@@ -292,6 +304,8 @@ class LVISMetric(CocoMetric):
                 continue
 
             try:
+                # print("Result files {}".format(metric))
+                # print("Result files: ", result_files[metric])[]
                 lvis_dt = LVISResults(lvis_gt, result_files[metric])
             except IndexError:
                 logger.info(
@@ -299,11 +313,14 @@ class LVISMetric(CocoMetric):
                 break
 
             iou_type = 'bbox' if metric == 'proposal' else metric
+            # print("DT results: ", lvis_dt.dataset["annotations"])
             lvis_eval = LVISEval(lvis_gt, lvis_dt, iou_type)
             lvis_eval.params.imgIds = self.img_ids
+            lvis_eval.params.iou_thrs = self.iou_thrs
             metric_items = self.metric_items
             if metric == 'proposal':
-                lvis_eval.params.useCats = 0
+                print("Use proposal ...")
+                lvis_eval.params.use_cats = 0
                 lvis_eval.params.maxDets = list(self.proposal_nums)
                 lvis_eval.evaluate()
                 lvis_eval.accumulate()
@@ -320,7 +337,12 @@ class LVISMetric(CocoMetric):
                 lvis_eval.accumulate()
                 lvis_eval.summarize()
                 lvis_results = lvis_eval.get_results()
+                lvis_results_pth = "./eval/eval_results.pkl"
+                with open(lvis_results_pth, 'wb') as f:
+                    pkl.dump(lvis_results, f)
+
                 if self.classwise:  # Compute per-category AP
+                    print("Classwise evaluation")
                     # Compute per-category AP
                     # from https://github.com/facebookresearch/detectron2/
                     precisions = lvis_eval.eval['precision']
@@ -333,13 +355,16 @@ class LVISMetric(CocoMetric):
                         # max dets index -1: typically 100 per image
                         # the dimensions of precisions are
                         # [num_thrs, num_recalls, num_cats, num_area_rngs]
+                        if catId not in self.valid_cat_ids:
+                            continue
                         nm = self._lvis_api.load_cats([catId])[0]
                         precision = precisions[:, :, idx, 0]
                         precision = precision[precision > -1]
                         if precision.size:
                             ap = np.mean(precision)
                         else:
-                            ap = float('nan')
+                            ap = 0.0
+                            # ap = float('nan')
                         results_per_category.append(
                             (f'{nm["name"]}', f'{float(ap):0.3f}'))
                         eval_results[f'{nm["name"]}_precision'] = round(ap, 3)
@@ -356,6 +381,9 @@ class LVISMetric(CocoMetric):
                     table_data += [result for result in results_2d]
                     table = AsciiTable(table_data)
                     logger.info('\n' + table.table)
+
+                else:
+                    print("NOT Classwise evaluation ")
 
                 if metric_items is None:
                     metric_items = [

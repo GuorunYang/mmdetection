@@ -142,8 +142,11 @@ class CocoDataset(BaseDetDataset):
             inter_h = max(0, min(y1 + h, img_info['height']) - max(y1, 0))
             if inter_w * inter_h == 0:
                 continue
-            if ann['area'] <= 0 or w < 1 or h < 1:
+            if 'area' not in ann.keys():
                 continue
+            else:
+                if ann['area'] <= 0 or w < 1 or h < 1:
+                    continue
             if ann['category_id'] not in self.cat_ids:
                 continue
             bbox = [x1, y1, x1 + w, y1 + h]
