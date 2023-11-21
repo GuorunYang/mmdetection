@@ -60,7 +60,11 @@ def parse_args():
         type=str,
         default='outputs',
         help='Output directory of images or prediction results.')
-    parser.add_argument('--texts', help='text prompt')
+    parser.add_argument('--texts', 
+        default=" a dropped object . an arrow . a white painting . a ground repair ",
+        type=str,
+                        
+        help='text prompt')
     parser.add_argument(
         '--device', default='cuda:0', help='Device used for inference')
     parser.add_argument(
