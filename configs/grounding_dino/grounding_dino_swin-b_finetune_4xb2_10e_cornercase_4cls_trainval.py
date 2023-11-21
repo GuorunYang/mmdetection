@@ -15,7 +15,7 @@ metainfo = dict(
         (220, 20, 60),
         (255, 0, 0),
         (0, 255, 255),
-        (255, 255, 0),    
+        (255, 255, 0),
     ]
 )
 
@@ -25,19 +25,22 @@ train_dataloader = dict(
     dataset=dict(
         data_root=data_root,
         metainfo=metainfo,
-        ann_file='annotations/train_4cls.json',
+        ann_file='annotations/trainval_4cls.json',
         data_prefix=dict(img='images/')))
 
 val_dataloader = dict(
     dataset=dict(
         metainfo=metainfo,
         data_root=data_root,
-        ann_file='annotations/val_4cls.json',
+        ann_file='annotations/trainval_4cls.json',
         data_prefix=dict(img='images/')))
 
 test_dataloader = val_dataloader
 
-val_evaluator = dict(ann_file=data_root + 'annotations/val_4cls.json')
+val_evaluator = dict(
+    ann_file=data_root + 'annotations/trainval_4cls.json',
+    classwise=True
+    )
 test_evaluator = val_evaluator
 
 max_epoch = 10
@@ -69,4 +72,4 @@ optim_wrapper = dict(
 
 
 # base_batch_size = (2 GPUs) x (4 samples per GPU)
-auto_scale_lr = dict(base_batch_size=8)
+auto_scale_lr = dict(base_batch_size=16)
