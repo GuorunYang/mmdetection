@@ -6,11 +6,11 @@ from tqdm import tqdm
 from argparse import ArgumentParser
 
 if __name__ == '__main__':
-    result_dir = "/home/guorun.yang/data/cornercase/results/A001_20231107_161603_4cls_infer"
+    result_dir = "/work01/guorun/data/cornercase/results/A001_20231118_125024/4cls_result"
     pred_dir = os.path.join(result_dir, "preds")
     vis_dir = os.path.join(result_dir, "vis")
-    drop_pred_dir = os.path.join(result_dir, "drop_preds")
-    drop_vis_dir = os.path.join(result_dir, "drop_vis")
+    drop_pred_dir = os.path.join(result_dir, "drop_preds_0.9")
+    drop_vis_dir = os.path.join(result_dir, "drop_vis_0.9")
     os.makedirs(drop_pred_dir, exist_ok=True)
     os.makedirs(drop_vis_dir, exist_ok=True)
     pred_list = sorted(os.listdir(pred_dir))
@@ -28,7 +28,7 @@ if __name__ == '__main__':
             frame_dets_scores = np.array(frame_dets['scores'])
             frame_dets_bboxes = np.array(frame_dets['bboxes'])
             valid_indices = np.where(
-                (np.logical_and(frame_dets_labels == 0, frame_dets_scores >= 0.70))
+                (np.logical_and(frame_dets_labels == 0, frame_dets_scores >= 0.90))
             )
             # print("Valid indices: ", valid_indices[0])
             # print("valid indices: ", len(valid_indices[0]))
