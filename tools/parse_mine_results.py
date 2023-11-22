@@ -6,11 +6,19 @@ from tqdm import tqdm
 from argparse import ArgumentParser
 
 if __name__ == '__main__':
-    result_dir = "/work01/guorun/data/cornercase/results/A001_20231118_125024/4cls_result"
-    pred_dir = os.path.join(result_dir, "preds")
-    vis_dir = os.path.join(result_dir, "vis")
-    drop_pred_dir = os.path.join(result_dir, "drop_preds_0.9")
-    drop_vis_dir = os.path.join(result_dir, "drop_vis_0.9")
+    parser = ArgumentParser()
+    parser.add_argument('-b', '--base_dir', type=str, help='Base directory')
+    parser.add_argument('--pred', type=str, default='preds', help='Predict directory')
+    parser.add_argument('--vis', type=str, default='vis', help='Vis directory')
+    parser.add_argument('--drop_pred', type=str, default='drop_pred', help='Predict drop object directory')
+    parser.add_argument('--drop_vis', type=str, default='drop_vis', help='Vis drop object directory')
+    parser.add_argument('--score-thr', type=float, default=0.7, help='bbox score threshold')
+    args = parser.parse_args()
+
+    pred_dir = os.path.join(args.base_dir, args.pred)
+    vis_dir = os.path.join(args.base_dir, args.vis)
+    drop_pred_dir = os.path.join(args.base_dir, args.drop_pred)
+    drop_vis_dir = os.path.join(args.base_dir, args.drop_vis)
     os.makedirs(drop_pred_dir, exist_ok=True)
     os.makedirs(drop_vis_dir, exist_ok=True)
     pred_list = sorted(os.listdir(pred_dir))
