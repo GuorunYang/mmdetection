@@ -61,7 +61,7 @@ def parse_args():
         default='outputs',
         help='Output directory of images or prediction results.')
     parser.add_argument('--texts', 
-        default=" a dropped object . an arrow . a white painting . a ground repair ",
+        default=" there is a dropped object on the road . an arrow . a white painting . a ground repair . a cone  ",
         type=str,              
         help='text prompt')
     parser.add_argument(
