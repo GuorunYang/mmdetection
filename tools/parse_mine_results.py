@@ -12,7 +12,7 @@ if __name__ == '__main__':
     parser.add_argument('--vis', type=str, default='vis', help='Vis directory')
     parser.add_argument('--drop_pred', type=str, default='drop_pred', help='Predict drop object directory')
     parser.add_argument('--drop_vis', type=str, default='drop_vis', help='Vis drop object directory')
-    parser.add_argument('--score-thr', type=float, default=0.7, help='bbox score threshold')
+    parser.add_argument('-s', '--score', type=float, default=0.3, help='bbox score threshold')
     args = parser.parse_args()
 
     pred_dir = os.path.join(args.base_dir, args.pred)
@@ -36,7 +36,7 @@ if __name__ == '__main__':
             frame_dets_scores = np.array(frame_dets['scores'])
             frame_dets_bboxes = np.array(frame_dets['bboxes'])
             valid_indices = np.where(
-                (np.logical_and(frame_dets_labels == 0, frame_dets_scores >= 0.90))
+                (np.logical_and(frame_dets_labels == 0, frame_dets_scores >= args.score))
             )
             # print("Valid indices: ", valid_indices[0])
             # print("valid indices: ", len(valid_indices[0]))

@@ -60,8 +60,14 @@ def parse_args():
         type=str,
         default='outputs',
         help='Output directory of images or prediction results.')
+    # parser.add_argument('--texts', 
+    #     default=" there is a dropped object on the road . an arrow . a white painting . a ground repair . a cone  ",
+    #     type=str,              
+    #     help='text prompt')
     parser.add_argument('--texts', 
-        default=" there is a dropped object on the road . an arrow . a white painting . a ground repair . a cone  ",
+        default=" there is a dropped object on the road . \
+            vehicle . cone . person . safety barrel . ground repair . \
+            white painting . arrow ",
         type=str,              
         help='text prompt')
     parser.add_argument(
@@ -91,7 +97,7 @@ def parse_args():
         help='Whether to print the results.')
     parser.add_argument(
         '--palette',
-        default='none',
+        default='random',
         choices=['coco', 'voc', 'citys', 'random', 'none'],
         help='Color palette used for visualization')
     # only for GLIP
