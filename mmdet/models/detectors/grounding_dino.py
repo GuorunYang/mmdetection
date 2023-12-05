@@ -5,6 +5,7 @@ from typing import Dict, Tuple, Union
 import torch
 import torch.nn as nn
 from torch import Tensor
+import mmengine
 
 from mmdet.registry import MODELS
 from mmdet.structures import OptSampleList, SampleList
@@ -28,10 +29,16 @@ class GroundingDINO(DINO):
     """
 
     def __init__(self, language_model, *args, **kwargs) -> None:
-
         self.language_model_cfg = language_model
         self._special_tokens = '. '
+        # Load precomputed tokens
+        self.precomputed_tokens = {}
+        # if "token_lib" in kwargs:
+        #     if os.path.exists(kwargs["token_lib"]):
+        #         self.precomputed_tokens = mmengine.load(kwargs["token_lib"])
+
         super().__init__(*args, **kwargs)
+    
 
     def _init_layers(self) -> None:
         """Initialize layers except for backbone, neck and bbox_head."""
@@ -68,6 +75,20 @@ class GroundingDINO(DINO):
             self,
             original_caption: Union[str, list, tuple],
             custom_entities: bool = False) -> Tuple[dict, str, list]:
+        
+        # if tokens are pre-computed, load them directly
+        # print("Precomputed token: ", self.precomputed_tokens)
+        raw_caption = original_caption
+        if raw_caption in self.precomputed_tokens:
+            ret = self.precomputed_tokens[raw_caption]
+            tokenized = ret["tokenized"]
+            caption_string = ret["caption_string"]
+            tokens_positive = ret["tokens_positive"]
+            entities = ret["entities"]
+            return tokenized, caption_string, tokens_positive, entities
+        # else:
+        #     print("Not find pre-computed tokens ??????? ")
+        
         """Get the tokens positive and prompts for the caption."""
         if isinstance(original_caption, (list, tuple)) or custom_entities:
             if custom_entities and isinstance(original_caption, str):
@@ -75,7 +96,7 @@ class GroundingDINO(DINO):
                 original_caption = original_caption.split(self._special_tokens)
                 original_caption = list(
                     filter(lambda x: len(x) > 0, original_caption))
-
+            print("Origin caption: ", original_caption)
             caption_string = ''
             tokens_positive = []
             for idx, word in enumerate(original_caption):
@@ -84,6 +105,7 @@ class GroundingDINO(DINO):
                       len(caption_string) + len(word)]])
                 caption_string += word
                 caption_string += self._special_tokens
+            print("Caption string: ", caption_string)
             # NOTE: Tokenizer in Grounding DINO is different from
             # that in GLIP. The tokenizer in GLIP will pad the
             # caption_string to max_length, while the tokenizer
@@ -97,19 +119,37 @@ class GroundingDINO(DINO):
         else:
             if not original_caption.endswith('.'):
                 original_caption = original_caption + self._special_tokens
+
             # NOTE: Tokenizer in Grounding DINO is different from
             # that in GLIP. The tokenizer in GLIP will pad the
             # caption_string to max_length, while the tokenizer
             # in Grounding DINO will not.
+            
             tokenized = self.language_model.tokenizer(
                 [original_caption],
                 padding='max_length'
                 if self.language_model.pad_to_max else 'longest',
                 return_tensors='pt')
+            # print("run_ner begin")
             tokens_positive, noun_phrases = run_ner(original_caption)
+            # print("run_ner done")
             entities = noun_phrases
             caption_string = original_caption
 
+            # print("Origin caption: ", original_caption)
+            # print("Origin caption (update): ", original_caption)
+            # print("Tokenized: ", tokenized)
+            # print("Token positive: ", tokens_positive)
+            # print("Noun phrases: ", noun_phrases)
+        
+        # Save the tokens to dict
+        print("Save the tokens to precomputed token lib")
+        self.precomputed_tokens[raw_caption] = {
+            "tokenized" : tokenized,
+            "caption_string" : caption_string,
+            "tokens_positive" : tokens_positive, 
+            "entities" : entities,
+        }
         return tokenized, caption_string, tokens_positive, entities
 
     def get_positive_map(self, tokenized, tokens_positive):
@@ -135,9 +175,11 @@ class GroundingDINO(DINO):
             id, which is numbered from 1, to its positive token id.
             The str represents the prompts.
         """
+        # print("Get tokens and prompts ...")
         tokenized, caption_string, tokens_positive, entities = \
             self.get_tokens_and_prompts(
                 original_caption, custom_entities)
+        # print("Get tokens and prompts Done")
         positive_map_label_to_token, positive_map = self.get_positive_map(
             tokenized, tokens_positive)
         return positive_map_label_to_token, caption_string, \
@@ -331,6 +373,9 @@ class GroundingDINO(DINO):
             custom_entities = batch_data_samples[0].custom_entities
         else:
             custom_entities = False
+
+        # print("len of text prompt: ", len(text_prompts))
+        # print("Text prompt:", text_prompts)
         if len(text_prompts) == 1:
             # All the text prompts are the same,
             # so there is no need to calculate them multiple times.
@@ -344,6 +389,8 @@ class GroundingDINO(DINO):
                                                      custom_entities)
                 for text_prompt in text_prompts
             ]
+        # print("Get tokens done... ")
+
         token_positive_maps, text_prompts, _, entities = zip(
             *_positive_maps_and_prompts)
         # extract text feats
