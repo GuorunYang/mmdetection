@@ -389,7 +389,13 @@ class DetInferencer(BaseInferencer):
         inputs = self.preprocess(
             ori_inputs, batch_size=batch_size, **preprocess_kwargs)
 
-        results_dict = {'predictions': [], 'visualization': []}
+        # print("Inputs: ", ori_inputs)
+        results_dict = {
+            'inputs' : [],
+            'predictions': [], 
+            'visualization': []
+        }
+        results_dict['inputs'] = ori_inputs
         for ori_imgs, data in (track(inputs, description='Inference')
                                if self.show_progress else inputs):
             preds = self.forward(data, **forward_kwargs)
