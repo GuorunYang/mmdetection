@@ -181,7 +181,7 @@ def _generate_dino_tags(
             if img_name in img2time:
                 format_tags.append({
                     'timestamp': img2time[img_name],
-                    'image_name' : img_name,
+                    # 'image_name' : img_name,
                     'tags': frame_dino_tags
                 })
         # frame_dino_tags = {}

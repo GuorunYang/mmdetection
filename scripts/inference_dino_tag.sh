@@ -11,7 +11,6 @@ python3 scripts/grounding_dino_mine.py \
     weights/swinb_autra_trainval_finetune_epoch_19.pth \
     --tag-score-thr 0.8 \
     --batch-size 20 \
-    # --is_dev 
-    # --no-save-vis \
-    # --no-save-pred \
+    --no-save-vis \
+    --no-save-pred
     # --is_dev
