@@ -1,0 +1,3 @@
+{
+    "grounding_dino_model_pth": "tos://yizhuang/local/tmp/test/model_zoo/swinb_autra_trainval_finetune_epoch_19.pth"
+}
