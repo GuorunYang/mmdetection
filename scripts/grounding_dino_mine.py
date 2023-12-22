@@ -155,8 +155,9 @@ def _generate_dino_tags(
         score_thre : 0.7):
     img2time = {}
     format_tags = []
+    total_frames, drop_frames = 0, 0
     if not os.path.exists(os.path.join(img_root, 'timestamps')):
-        return format_tags
+        return format_tags, total_frames, drop_frames
     # Load the frames from timestamps
     with open(os.path.join(img_root, 'timestamps'), 'r', encoding="utf-8") as f:
         for line in f.readlines():
@@ -166,6 +167,7 @@ def _generate_dino_tags(
     
     # Load the image paths from results
     img_list = [frame_input["img_path"] for frame_input in dino_result["inputs"]]
+    total_frames = len(img_list)
     for i, frame_pred in enumerate(dino_result["predictions"]):
         frame_labels = np.array(frame_pred["labels"])
         frame_bboxes = np.array(frame_pred["bboxes"])
@@ -175,6 +177,7 @@ def _generate_dino_tags(
         )
         frame_dino_tags = []
         if len(valid_indices[0]) > 0:
+            drop_frames += 1
             frame_dino_tags = ["dino_dropped"]
             img_path = img_list[i]
             img_name = (img_path.split('/'))[-1].split('.')[0]
@@ -201,7 +204,7 @@ def _generate_dino_tags(
         #         'image_name' : img_name,
         #         'tags': frame_dino_tags
         #     })
-    return format_tags
+    return format_tags, total_frames, drop_frames
 
 
 def main():
@@ -221,7 +224,7 @@ def main():
     # print("Result input len: ", len(result_dict["inputs"]))
     # print("Result predictions len: ", len(result_dict["predictions"]))
     if os.path.isdir(call_args["inputs"]):
-        dino_tags = _generate_dino_tags(
+        dino_tags, total_frames, drop_frames = _generate_dino_tags(
             img_root=call_args["inputs"], 
             dino_result=result_dict, 
             score_thre = data_args['tag_score_thr']
@@ -237,7 +240,7 @@ def main():
                 is_dev=data_args['is_dev'], 
                 dino_tags=dino_tags
             )
-
+        print_log(f'Total frame: {total_frames}, Drop object frames: {drop_frames}')
     if call_args['out_dir'] != '' and not (call_args['no_save_vis']
                                            and call_args['no_save_pred']):
         print_log(f'results have been saved at {call_args["out_dir"]}')
