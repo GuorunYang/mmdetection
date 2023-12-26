@@ -10,6 +10,11 @@ from mmengine.logging import print_log
 from mmdet.apis import DetInferencer
 from typing import Dict, List, Optional, TextIO, Tuple
 
+
+# if you want update model_type, please connect darui.wang
+MODEL_TYPE = 'dino_dropped'
+
+
 def parse_args():
     parser = ArgumentParser()
     parser.add_argument(
@@ -122,6 +127,7 @@ def _save_dino_tags(
     json_payload = {
         'record_path': record_path,
         'vehicle_id': vehicle_id,
+        'model_type': MODEL_TYPE,
         'frame_tags': dino_tags
     }
     print(f'json_payload: {json_payload} is_dev: {is_dev}')
