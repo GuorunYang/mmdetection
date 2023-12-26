@@ -12,7 +12,7 @@ if __name__ == '__main__':
     parser.add_argument('--vis', type=str, default='vis', help='Vis directory')
     parser.add_argument('--drop_pred', type=str, default='drop_pred', help='Predict drop object directory')
     parser.add_argument('--drop_vis', type=str, default='drop_vis', help='Vis drop object directory')
-    parser.add_argument('-s', '--score', type=float, default=0.3, help='bbox score threshold')
+    parser.add_argument('-s', '--score', type=float, default=0.8, help='bbox score threshold')
     args = parser.parse_args()
 
     pred_dir = os.path.join(args.base_dir, args.pred)

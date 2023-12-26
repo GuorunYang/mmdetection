@@ -59,6 +59,10 @@ def parse_args():
         action='store_true',
         help='Display the image in a popup window.')
     parser.add_argument(
+        '--save-local',
+        action='store_true',
+        help='Save detections and tags local')
+    parser.add_argument(
         '--no-save-vis',
         action='store_true',
         help='Do not save detection vis results')
@@ -102,7 +106,7 @@ def parse_args():
         init_args[init_kw] = call_args.pop(init_kw)
     
     # Collect data args
-    data_kws = ['tag_score_thr', 'is_dev']
+    data_kws = ['tag_score_thr', 'is_dev', 'save_local']
     data_args = {}
     for data_kw in data_kws:
         data_args[data_kw] = call_args.pop(data_kw)
@@ -142,8 +146,9 @@ def _format_record_path(record_path: str):
         '_apollo_sensor_camera_upmiddle_left_30h_image_compressed'
     )
     if os.path.isdir(img_dir):
-        record_name = record_path.split('/')[-1]
+        record_name = img_dir.split('/')[-2]
         vehicle_id = record_name.split('_')[0]
+        print("record name: ", record_name)
         return vehicle_id, record_name, img_dir
     else:
         return 'unknown', 'unknown', record_path
@@ -154,10 +159,10 @@ def _generate_dino_tags(
         dino_result : Dict,
         score_thre : 0.7):
     img2time = {}
-    format_tags = []
+    online_tags, local_tags = [], []
     total_frames, drop_frames = 0, 0
     if not os.path.exists(os.path.join(img_root, 'timestamps')):
-        return format_tags, total_frames, drop_frames
+        return online_tags, local_tags, total_frames, drop_frames
     # Load the frames from timestamps
     with open(os.path.join(img_root, 'timestamps'), 'r', encoding="utf-8") as f:
         for line in f.readlines():
@@ -175,36 +180,29 @@ def _generate_dino_tags(
         valid_indices = np.where(
             (np.logical_and(frame_labels == 0, frame_scores >= score_thre))
         )
-        frame_dino_tags = []
+        # online tags
         if len(valid_indices[0]) > 0:
             drop_frames += 1
-            frame_dino_tags = ["dino_dropped"]
+            drop_bboxes = frame_bboxes[valid_indices].tolist()
+            drop_scores = frame_scores[valid_indices].tolist()
+            frame_dino_tags = {}
+            frame_dino_tags['bboxes'] = drop_bboxes
+            frame_dino_tags['scores'] = drop_scores
             img_path = img_list[i]
             img_name = (img_path.split('/'))[-1].split('.')[0]
             if img_name in img2time:
-                format_tags.append({
+                online_tags.append({
                     'timestamp': img2time[img_name],
                     # 'image_name' : img_name,
+                    'tags': ["dino_dropped"]
+                })
+                local_tags.append({
+                    'timestamp': img2time[img_name],
+                    'image_name' : img_name,
                     'tags': frame_dino_tags
                 })
-        # frame_dino_tags = {}
-        # if len(valid_indices[0]) > 0:
-        #     drop_bboxes = frame_bboxes[valid_indices].tolist()
-        #     drop_scores = frame_scores[valid_indices].tolist()
-        #     frame_dino_tags['bboxes'] = drop_bboxes
-        #     frame_dino_tags['scores'] = drop_scores
-        # else:
-        #     frame_dino_tags['bboxes'] = []
-        #     frame_dino_tags['scores'] = []
-        # img_path = img_list[i]
-        # img_name = (img_path.split('/'))[-1].split('.')[0]
-        # if img_name in img2time:
-        #     format_tags.append({
-        #         'timestamp': img2time[img_name],
-        #         'image_name' : img_name,
-        #         'tags': frame_dino_tags
-        #     })
-    return format_tags, total_frames, drop_frames
+        
+    return online_tags, local_tags, total_frames, drop_frames
 
 
 def main():
@@ -224,21 +222,27 @@ def main():
     # print("Result input len: ", len(result_dict["inputs"]))
     # print("Result predictions len: ", len(result_dict["predictions"]))
     if os.path.isdir(call_args["inputs"]):
-        dino_tags, total_frames, drop_frames = _generate_dino_tags(
+        # Generate tags
+        online_tags, local_tags, total_frames, drop_frames = _generate_dino_tags(
             img_root=call_args["inputs"], 
-            dino_result=result_dict, 
+            dino_result=result_dict,
             score_thre = data_args['tag_score_thr']
         )
+        # Save local tags
+        if data_args["save_local"]:
+            # Local save pth
+            local_pth = "{}/{}.json".format(
+                call_args['out_dir'], record_name)
+            with open(local_pth, 'w') as f:
+                json.dump(local_tags, f, indent=4)
+        # Save online tags
         if vehicle_id != 'unknown' and record_name != 'unknown':
-            # tmp_pth = "./result.json"
-            # with open(tmp_pth, 'w') as f:
-            #     json.dump(dino_tags, f, indent=4)
             normal_record_path = os.path.join('yizhuang/raw_records', record_name)
             _save_dino_tags(
                 record_path=normal_record_path, 
                 vehicle_id=vehicle_id,
                 is_dev=data_args['is_dev'], 
-                dino_tags=dino_tags
+                dino_tags=online_tags
             )
         print_log(f'Total frame: {total_frames}, Drop object frames: {drop_frames}')
     if call_args['out_dir'] != '' and not (call_args['no_save_vis']
