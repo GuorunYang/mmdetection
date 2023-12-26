@@ -13,7 +13,7 @@ python3 scripts/grounding_dino_mine.py \
     --tag-score-thr 0.8 \
     --batch-size 20 \
     --save-local \
-    --out-dir $2
-    # --no-save-vis \
+    --no-save-vis \
+    --out-dir $2 \
     # --no-save-pred
     # --is_dev
