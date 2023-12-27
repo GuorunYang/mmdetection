@@ -9,12 +9,14 @@ MODEL_DIR=$2
 EPOCH_NUM=$3
 LOG_DIR=$4
 
-for((i=1; i<=$EPOCH_NUM; i++));  
-do
+mkdir -p $LOG_DIR
+
+for i in $(seq 1 $EPOCH_NUM)
+do   
 python tools/test.py \
-    CONFIG_PATH \
+    $CONFIG_PATH \
     $MODEL_DIR/epoch_$i.pth \
-    2>&1 | tee work_dirs/eval/epoch_$i.log
+    2>&1 | tee $LOG_DIR/epoch_$i.log
 pid=$!
 wait $pid
 done
