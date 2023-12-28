@@ -1,7 +1,7 @@
 _base_ = 'grounding_dino_swin-b_finetune_16xb2_1x_coco.py'
 load_from = './weights/groundingdino_swinb_cogcoor_mmdet-55949c9c.pth'  # noqa
 
-data_root = 'data/autra/'
+data_root = 'data/autra_ovr_trainval_v0.1/'
 class_name = (
     "dropped object",
     # "vehicle",
