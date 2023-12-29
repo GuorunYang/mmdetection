@@ -4,7 +4,7 @@ _base_ = [
     '../_base_/default_runtime.py',
 ]
 load_from = 'https://download.openmmlab.com/mmdetection/v3.0/grounding_dino/groundingdino_swint_ogc_mmdet-822d7e9d.pth'  # noqa
-lang_model_name = 'bert-base-uncased'
+lang_model_path = './bert_case_uncased_data/'
 
 model = dict(
     type='GroundingDINO',
@@ -20,7 +20,7 @@ model = dict(
     ),
     language_model=dict(
         type='BertModel',
-        name=lang_model_name,
+        name=lang_model_path,
         pad_to_max=False,
         use_sub_sentence_represent=True,
         special_tokens_list=['[CLS]', '[SEP]', '.', '?'],
