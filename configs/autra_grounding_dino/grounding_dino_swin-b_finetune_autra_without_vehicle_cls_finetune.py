@@ -4,7 +4,7 @@ load_from = './weights/groundingdino_swinb_cogcoor_mmdet-55949c9c.pth'  # noqa
 data_root = 'data/autra/'
 class_name = (
     "dropped object",
-    "vehicle",
+    # "vehicle",
     "person",
     "cone",
     "safety barrel",
@@ -17,7 +17,7 @@ metainfo = dict(
     classes=class_name,
     palette=[
         (220, 20, 60),
-        (255, 0, 0),
+        # (255, 0, 0),
         (0, 255, 255),
         (255, 255, 0),
         (160, 32, 240),
@@ -33,20 +33,20 @@ train_dataloader = dict(
     dataset=dict(
         data_root=data_root,
         metainfo=metainfo,
-        ann_file='annotations/drop_train_merge_no_vehicle_1226.json',
+        ann_file='annotations/train_4cls_without_vehicle.json',
         data_prefix=dict(img='images/')))
 
 val_dataloader = dict(
     dataset=dict(
         metainfo=metainfo,
         data_root=data_root,
-        ann_file='annotations/val_5cls.json',
+        ann_file='annotations/val_4cls_without_vehicle.json',
         data_prefix=dict(img='images/')))
 
 test_dataloader = val_dataloader
 
 val_evaluator = dict(
-    ann_file=data_root + 'annotations/val_5cls.json',
+    ann_file=data_root + 'annotations/val_4cls_without_vehicle.json',
     classwise=True
     )
 test_evaluator = val_evaluator
