@@ -20,14 +20,16 @@ ground_cls_dict = {
 def main():
     autra_dataset_dir = "/home/guorun.yang/data/autra"
     autra_image_dir = os.path.join(autra_dataset_dir, "images")
-    autra_anno_pth = os.path.join(autra_dataset_dir, "annotations/drop_trainval.json")
+    # autra_anno_pth = os.path.join(autra_dataset_dir, "annotations/drop_train.json")
+    autra_anno_pth = os.path.join(autra_dataset_dir, "annotations_new/trainval_no_vehicle_cls.json")
+
     corner_dataset_dir = "/home/guorun.yang/data/cornercase"
     corner_image_dir = os.path.join(corner_dataset_dir, "images")
     corner_anno_pth = os.path.join(corner_dataset_dir, "annotations/trainval_4cls_rename.json")
 
     export_classes = [
         "dropped object",
-        "vehicle",
+        # "vehicle",
         "person",
         "cone",
         "safety barrel",
@@ -42,26 +44,40 @@ def main():
         data_path=autra_image_dir,
         labels_path=autra_anno_pth,
     )
-    
+    # autra_view = autra_dataset.filter_labels(
+    #     "detections",
+    #     F("label").is_in(export_classes)
+    # )
+    autra_filter_dataset = (
+        autra_dataset.select_fields("detections").filter_labels(
+            "detections",
+            F("label").is_in(export_classes)
+        )
+    ).clone()
     corner_dataset = fo.Dataset.from_dir(
         dataset_type=fo.types.COCODetectionDataset,
         data_path=corner_image_dir,
         labels_path=corner_anno_pth,
     )
+    # corner_view = corner_dataset.match("file_name").starts_with("A001")
     corner_view = corner_dataset.filter_labels(
         "detections",
-        F("label").is_in(["dropped object", "ground repair", "white painting", "arrow"])
+        F("label").is_in(export_classes)
     )
-    autra_dataset.merge_samples(
+    corner_view = corner_dataset.match(
+        F("filepath").starts_with("/home/guorun.yang/data/cornercase/images/A001")
+    )
+    # corner_session = fo.launch_app(corner_view)
+    # corner_session.wait()
+
+    autra_filter_dataset.merge_samples(
         corner_view,
         fields = "detections",
     )
-    # autra_session = fo.launch_app(autra_dataset)
-    # autra_session.wait()
 
-    export_pth = os.path.join(autra_dataset_dir, "annotations/annotations_merge.json")
-    autra_dataset.persistent = True
-    autra_dataset.export(
+    export_pth = os.path.join(autra_dataset_dir, "annotations/drop_trainval_merge_no_vehicle_1226.json")
+    autra_filter_dataset.persistent = True
+    autra_filter_dataset.export(
         # export_dir=export_dir,
         dataset_type=fo.types.COCODetectionDataset,
         labels_path = export_pth,
@@ -79,52 +95,20 @@ def main():
     # Filter the labels 
 
 
-# def main():
-#     drop_anno_pth = "/home/guorun.yang/data/autra/annotations/drop_trainval.json"
-#     ground_anno_pth = "/home/guorun.yang/data/cornercase/annotations/trainval_4cls.json"
-#     drop_label = {}
-#     ground_label = {}
-#     with open(drop_anno_pth, 'r') as f:
-#         drop_label = json.load(f)
-#     # Append ground cls to drop label
-#     drop_label["categories"].append(
-#         {
-#             "id": 5,
-#             "name": "ground pair",
-#             "supercategory": null
-#         }
-#     )
-#     drop_label["categories"].append(
-#         {
-#             "id": 6,
-#             "name": "white painting",
-#             "supercategory": null
-#         }
-#     )
-#     drop_label["categories"].append(
-#         {
-#             "id": 7,
-#             "name": "arrow",
-#             "supercategory": null
-#         },
-#     )
-#     drop_annos_num = len(drop_label["annotations"])
-
-#     with open(ground_anno_pth, 'r') as f:
-#         ground_label = json.load(f)
-#     # ground_categories = ground_label["categories"]
-#     ground_annos = ground_label["annotations"]
-#     for i, lbl in enumerate(ground_annos):
-#         cat_id = lbl["id"]
-#         if cat_id == 1 or cat_id == 2 or cat_id == 3:
-
-#     # pretty print
-#     json_labels = {}
-#     with open(export_pth, 'r') as f:
-#         json_labels = json.load(f)
-#     with open(export_pth, 'w') as f:
-#         json.dump(json_labels, f, indent=4)
+# def check_duplicate_image(image_dir):
+#     image_list = sorted(os.listdir(image_dir))
+#     autra_frame_set = set()
+#     cornercase_image_list = []
+#     for image_fn in image_list:
+#         if image_fn.startswith("16"):
+#             frame_name = image_fn.rsplit(".", 1)[0]
+#             autra_frame_set.add(frame_name)
+#         else:
+#             cornercase_image_list.append(image_fn)
+#     print()
+#     print("Cornercase image list: ", cornercase_image_list)
 
 
 if __name__ == '__main__':
     main()
+
