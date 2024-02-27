@@ -7,6 +7,8 @@ import requests
 
 from argparse import ArgumentParser
 from mmengine.logging import print_log
+from mmengine.config import Config
+from mmengine.runner.checkpoint import _load_checkpoint
 from mmdet.apis import DetInferencer
 from typing import Dict, List, Optional, TextIO, Tuple
 
@@ -219,6 +221,13 @@ def main():
     call_args["inputs"] = img_dir
     print("Inputs: ", call_args["inputs"])
     
+    # Copied from mmengine/infer/infer.py:_init_model()
+    checkpoint = _load_checkpoint(init_args['weights'])
+    cfg_string = checkpoint['message_hub']['runtime_info']['cfg']
+    config = Config.fromstring(cfg_string, file_format='.py')._cfg_dict
+    config['model']['language_model']['name'] = './bert_case_uncased_data/'
+    init_args['model'] = config
+
     inferencer = DetInferencer(**init_args)
     start = time.time()
     result_dict = inferencer(**call_args)
